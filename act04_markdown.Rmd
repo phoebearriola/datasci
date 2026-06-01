@@ -1,0 +1,72 @@
+---
+title: 'Activity 4: Tidyverse Data Wrangling'
+author: "Phoebe Arriola"
+date: "2026-06-01"
+output: html_document
+---
+# Tidyverse Wrangling Operations
+
+## Loading Packages and Initial Inspection
+```{r load-tidyverse, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(palmerpenguins)
+
+# Peek at the integrated iris data structure using tidyverse pipe
+iris |> glimpse()
+```
+
+## Data Transformation Using Dplyr Verbs
+Demonstrating filtering, column picking, and mutations.
+
+### Filtering and Selecting Rows/Columns
+```{r filtering-selections}
+# Filter rows matching setosa
+filter(iris, Species == "setosa")
+
+# Select targeted metrics columns
+select(iris, Sepal.Length, Sepal.Width, Species)
+
+# Inverted column matches (Removing Sepal columns)
+select(iris, -contains("Sepal"))
+```
+
+### Piping Pipelines (`|>` or `%>%`) and Mutating Data
+```{r mutations}
+# Generating ratios and arranging them
+sepal.sort <- iris |>  
+  mutate(Sep.LWratio = Sepal.Length/Sepal.Width) |> 
+  arrange(Sep.LWratio)
+
+# Use knitr's kable function to output a clean table snippet
+knitr::kable(head(sepal.sort), digits = 2)
+```
+
+## Advanced Aggregations and Pivoting Operations
+
+### Grouping and Summarizing Penguin Metrics
+```{r penguin-summary}
+penguins |> 
+  filter(!is.na(sex)) |>
+  group_by(species, sex) |> 
+  summarize(mean_mass = mean(body_mass_g)) 
+```
+
+### Toggling Data Formats (Wide to Long)
+```{r pivoting}
+# Construct original manual broad dataframe
+set.seed(1)
+plots <- paste0("plot", LETTERS[1:4])
+sunflower <- rpois(n=4, 20)
+aster <- rpois(n=4, 50)
+dandelion <- rpois(n=4, 80) 
+
+Flowers <- data.frame(plots, sunflower, aster, dandelion)
+
+# Transform wide layout to long layout using pivot_longer
+FlowersLong <- Flowers |> pivot_longer(cols = !plots,
+                        names_to = "flowers",
+                        values_to = "counts")
+
+# Show converted long framework using kable
+knitr::kable(FlowersLong)
+```

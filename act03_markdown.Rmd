@@ -1,0 +1,91 @@
+---
+title: "Activity 3: Summary Statistics and Graphics"
+author: "Phoebe Arriola - 12217875"
+date: "01 June 2026"
+output: html_document
+---
+
+# Activity 3 Analysis
+
+## Data Loading and Cleaning
+```{r data-cleaning, echo = TRUE, warning = TRUE}
+# Read and clean data using explicit class methods
+data <- read.csv("herpetozoa-033-095-s001.csv")
+clean_data <- data[!is.na(data$Htypes) & !is.na(data$Elev) & !is.na(data$SPPTotal), ]
+
+# Verify structure
+str(clean_data)
+```
+
+## Descriptive Statistics
+Calculating basic statistics for elevation metrics and species total matrices Act03_Script.R].
+
+```{r descriptive-stats}
+elev_data <- clean_data$Elev
+mean(elev_data)
+sd(elev_data)
+range(elev_data)
+
+# Aggregate species counts across matrix columns 7 to 33
+species_matrix <- clean_data[, 7:33]
+species_counts <- sapply(species_matrix, sum)
+print(species_counts)
+```
+
+### Habitat and Species Distribution Summaries
+We isolate the maximum and minimum abundant species (`Phlo` and `Babu`) across different habitat types Act03_Script.R].
+
+```{r habitat-summaries}
+combined_species <- data.frame(
+  Htypes = clean_data$Htypes,
+  Max_Sp = clean_data$Phlo, 
+  Min_Sp = clean_data$Babu
+)
+
+split_max <- split(combined_species$Max_Sp, combined_species$Htypes)
+sapply(split_max, mean)
+
+split_min <- split(combined_species$Min_Sp, combined_species$Htypes)
+sapply(split_min, mean)
+```
+
+## Graphical Representations
+The following are the data visualizations demonstrating species counts against elevations, habitat groupings, and overall frequencies Act03_Script.R].
+
+### Species Abundance vs Elevation Gradient
+```{r scatterplot, fig.width = 6, fig.height = 4, fig.align = "center"}
+scatter_data <- data.frame( 
+  SPPTotal = clean_data$SPPTotal,
+  Elev = clean_data$Elev,
+  Htypes = clean_data$Htypes
+)
+
+plot(scatter_data$Elev, scatter_data$SPPTotal, 
+     xlab = "Elevation (m)", 
+     ylab = "Species Total Count (SPPTotal)",
+     main = "Species Total Count across Elevation Gradient", 
+     col = factor(scatter_data$Htypes),
+     pch = 19)
+```
+
+### Observations per Habitat Type
+```{r barplot, fig.width = 6, fig.height = 4, fig.align = "center"}
+split_habitat_totals <- split(clean_data$SPPTotal, clean_data$Htypes)
+total_per_habitat <- sapply(split_habitat_totals, sum)
+
+barplot(total_per_habitat, 
+        xlab = "Habitat Types",
+        ylab = "Total Species Observed", 
+        main = "Total Species Count per Habitat Type")
+```
+
+### Distribution of Sites Frequency
+```{r histogram, fig.width = 6, fig.height = 4, fig.align = "center"}
+hist(clean_data$SPPTotal, 
+     xlab = "Total Species Counts per Site", 
+     ylab = "Frequency of Sites", 
+     main = "Distribution of Total Species Counts")
+```
+
+## Written Interpretation
+The survey area of Palawan displayed a lot of variation because of the different sea-level regions and the mountainous areas Act03_Script.R]. Elevation measurements ranged from 60 meters to 1,020 meters above sea level Act03_Script.R]. The data shows a clear pattern between common and uncommon species: **Phlo** is very abundant, while **Babu** is very rare Act03_Script.R]. Additionally, Agricultural/Secondary Growth (ASG) and Old Growth Forest (OGF) have the highest number of species, while cultivated land (CVT) could not support biodiversity. Human activities have disturbed the environment, harming important microhabitats Act03_Script.R].
