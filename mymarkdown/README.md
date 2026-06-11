@@ -4,3 +4,5 @@ Phoebe Arriola - 12217875
 ](https://github.com/phoebearriola/datasci/blob/main/Arriola_K-means.html
 )
 
+[Activity 8: Hierarchical Clustering
+]()
