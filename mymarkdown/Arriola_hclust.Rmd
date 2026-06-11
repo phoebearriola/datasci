@@ -1,0 +1,76 @@
+---
+title: "Hierarchical Clustering Activity"
+author: "Arriola"
+date: "2026-06-11"
+output: html_document
+---
+
+```{r setup-and-data}
+### A: Hierarchical clustering
+# 1. Load required package for silhouette analysis and divisive clustering
+library(cluster)
+
+# 2. Read in the morphology data as a dataframe 
+getwd()
+setwd("/Users/phoebearriola/Desktop/uni")
+list.files()
+morph_df <- read.csv("morphology_data.csv")
+
+# 3. Remove the sex columns 
+morph_numeric <- morph_df[, -c(1, 2)]
+
+# 4. Ensure that the dataframe has no NAs
+good <- complete.cases(morph_numeric)
+morph_numeric <- morph_numeric[good, ]
+
+# Standardize / Scale the numeric metrics
+morph_scaled <- scale(morph_numeric)
+
+# 5. Calculate the Euclidean distance matrix
+d <- dist(morph_scaled, method = "euclidean")
+
+# 6. Perform hierarchical clustering using Ward’s and Single Linkage methods.
+hc_ward <- hclust(d, method = "ward.D2")
+hc_single <- hclust(d, method = "single")
+
+# 7. Create a for loop function to explore Ks from 2 to 10 for each method using the Silhouette score and display the results with a plot.
+k_values <- 2:10
+ward_sil_widths <- numeric(length(k_values))
+single_sil_widths <- numeric(length(k_values))
+
+for (i in 1:length(k_values)) {
+  k <- k_values[i]
+  
+  ward_clusters <- cutree(hc_ward, k = k)
+  ward_sil <- silhouette(ward_clusters, d)
+  ward_sil_widths[i] <- mean(ward_sil[, 3])
+  
+  single_clusters <- cutree(hc_single, k = k)
+  single_sil <- silhouette(single_clusters, d)
+  single_sil_widths[i] <- mean(single_sil[, 3])
+}
+
+plot(k_values, ward_sil_widths, type = "b", pch = 19, col = "darkblue",
+     xlab = "Number of Clusters (K)", ylab = "Average Silhouette Width",
+     main = "Ward's Method: K Selection via Silhouette Score")
+
+plot(k_values, single_sil_widths, type = "b", pch = 19, col = "darkred",
+     xlab = "Number of Clusters (K)", ylab = "Average Silhouette Width",
+     main = "Single Linkage: K Selection via Silhouette Score")
+
+# 8. Generate a dendrogram for each method, highlighting the optimal K with colored boxes.
+opt_k <- 2 
+plot(hc_ward, main = "Dendrogram: Ward's Linkage", cex = 0.5)
+rect.hclust(hc_ward, k = opt_k, border = "darkblue")
+
+plot(hc_single, main = "Dendrogram: Single Linkage", cex = 0.5)
+rect.hclust(hc_single, k = opt_k, border = "darkred")
+
+### B. K-means vs. Hierarchical
+## 1. Revisit your K-means outputs from the previous activity and compare how the clusters were determined.
+
+# The Elbow Method from the previous activity identified K = 2 as the best number of clusters. In this activity, Ward’s hierarchical clustering also showed the highest silhouette width at K = 2 (about 0.37). Since both methods chose the same number of clusters, the results match and suggest that the lizard dataset is best divided into two main clusters.
+
+## 2. Are the clusters consistent? If not, what do you think causes this, and how might it influence your interpretation of biological patterns in the data?
+
+#In both methods and clusters, K = 2 was the optimal number. There are some samples assigned in different ways, likely caused by the different manners of groupings by each method. K-means divides the samples according to the distnce from centroids or cluster centers. On the other hand, Ward's hierarchical divides samples by treating each sample as its own group, and combining similar groups togeher to form dendrograms. Both methods indicate that the data set on lizard morphology contains two main groups. 
