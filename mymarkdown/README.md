@@ -5,4 +5,4 @@ Phoebe Arriola - 12217875
 )
 
 [Activity 8: Hierarchical Clustering
-]()
+](https://github.com/phoebearriola/datasci/blob/main/mymarkdown/Arriola_hclust.html)
