@@ -8,4 +8,3 @@ Phoebe Arriola - 12217875
 
 [Activity 9: PCA](https://phoebearriola.github.io/datasci/mymarkdown/Arriola_PCA.html)
 
-[Activity 10: GIS](https://phoebearriola.github.io/datasci/mymarkdown/Arriola_gis.html)
