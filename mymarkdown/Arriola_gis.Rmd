@@ -1,0 +1,78 @@
+---
+title: "Arriola_gis"
+author: "Arriola, Phoebe M."
+date: "2026-06-22"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(maps)
+library(osmdata)
+library(sf)
+library(terra)
+library(ggplot2)
+library(ggnewscale)
+library(dplyr)
+
+# 1. Read the raw data
+getwd()
+setwd("/Users/phoebearriola/Desktop/uni")
+list.files()
+df <- read.delim("0073014-260519110011954.csv") 
+
+# 2. Filter for complete coordinate records
+good <- complete.cases(df[, c("decimalLongitude", "decimalLatitude")])
+cleaned <- df[good, ]
+
+# 3. Read the provincial level shapefile
+my_shape <- st_read("PHL_adm1.shp")
+
+# 4. Filter for the species' range in Northern Luzon
+luzon_provinces <- my_shape %>%
+  filter(NAME_1 %in% c("Cagayan", "Isabela", "Ilocos Norte", "Abra", 
+                       "Kalinga", "Apayao", "Mountain Province", 
+                       "Nueva Vizcaya", "Quirino"))
+
+# 5. Load the Digital Elevation Model raster
+phil_dem <- rast("ph_ strm_geo.tif") 
+
+# 6. Check and match the Coordinate Reference Systems (CRS)
+if (st_crs(luzon_provinces) != st_crs(phil_dem)) {
+  luzon_provinces <- st_transform(luzon_provinces, st_crs(phil_dem))
+}
+
+# 7. Clip and mask the elevation to selected provinces
+dem <- crop(phil_dem, luzon_provinces) |> mask(luzon_provinces)
+
+# 8. Convert the raster into a dataframe so ggplot can plot 
+names(dem) <- "elevation"
+r_df <- as.data.frame(dem, xy = TRUE)
+
+# 9. Building the map with ggplolt2
+ggplot() +
+  # a. Background Layer: Elevation Raster
+  geom_tile(data = r_df, aes(x = x, y = y, fill = elevation)) +
+  scale_fill_gradientn(
+    colors = c("#2b83ba", "#abdda4", "#ffffbf", "#fdae61", "#d7191c"),
+    name = "Elevation (m)") +
+    
+  # b. Reset the fill scale to add species points cleanly
+    new_scale_fill() +
+    
+  # c. Top Layer: Species occurrence points from GBIF
+geom_point(data = cleaned,
+             aes(x = decimalLongitude, y = decimalLatitude, fill = "Northern Luzon Giant Cloud Rat"),
+             shape = 21, 
+             color = "black", 
+             size = 3, 
+             stroke = 1.2) +
+    # d. Map Customization and Labels
+scale_fill_manual(values = c("Northern Luzon Giant Cloud Rat" = "#1b9e77"), name = "Species") +
+  coord_sf(xlim = c(119.5, 122.5), 
+           ylim = c(15.5, 18.5), 
+           expand = FALSE) +
+  labs(title = "Distribution Map of Phloeomys pallidus",
+       subtitle = "Northern Luzon, Philippines",
+       x = "Longitude (°E)",
+       y = "Latitude (°N)") +
+  theme_bw()
