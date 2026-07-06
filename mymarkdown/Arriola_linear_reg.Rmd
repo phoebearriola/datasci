@@ -1,0 +1,114 @@
+---
+title: "Arriola_linear_reg"
+author: "Arriola, Phoebe M."
+date: "2026-07-06"
+output: html_document
+---
+
+```{r setup-and-data}
+#### A. Simple Linear Regression
+# 1. Setting up
+library(terra)
+getwd()
+setwd("/Users/phoebearriola/Desktop/uni")
+list.files()
+
+# 2. Read in the species data and remove unnecessary rows with NAs.
+species_data <- read.csv("herpetozoa-033-095-s001.csv")
+good_rows <- complete.cases(species_data)
+species_cleaned <- species_data[good_rows, ]
+
+# 3. Read in the elevation data (ph_strm_geo.tif).
+elevation_raster <- rast("ph_strm_geo.tif")
+
+# 4. From the species data, subset the longitude and latitude coordinates. Then convert the coordinates to a spatial vector using the “vect” function from the “terra” package.
+coords <- species_cleaned[, c("Long", "Lat")]
+species_vect <- vect(as.matrix(coords), crs = crs(elevation_raster))
+
+# 5. Using the converted coordinates, extract elevation data for each point with the “extract” function in the “terra” package. The extracted data will have two columns: “ID” and “Band_1.” The “Band_1” column contains the elevation.
+extracted_elev <- extract(elevation_raster, species_vect)
+
+# 6. Subset the species data to retain only the species richness column (SPPTotal). Then combine this column with the extracted elevation. Rename “Band_1” to “elevation.”
+df_simple <- data.frame(
+  SPPTotal = species_cleaned$SPPTotal,
+  elevation = extracted_elev$Band_1
+)
+
+# 7. Now, perform simple linear regression using the code from the pre-lab lecture, including a plot. What can you infer about the relationship between species and elevation?
+df_simple$SPPTotal <- as.numeric(df_simple$SPPTotal)
+good_simple <- complete.cases(df_simple)
+df_simple <- df_simple[good_simple, ]
+x <- df_simple$elevation
+y <- df_simple$SPPTotal
+model_simple <- lm(y ~ x)
+summary(model_simple)
+a <- coef(model_simple)[1]
+b <- coef(model_simple)[2]
+cat("Regression Equation:\n")
+cat("y =", round(a,3), "+", round(b,3), "x\n\n")
+yhat <- predict(model_simple)
+
+pdf("Arriola_Simple linear reg_Rplot.pdf", width = 7, height = 5)
+
+plot(x, y,
+     pch = 19,
+     col = "blue",
+     xlab = "Elevation (m)",
+     ylab = "Species Richness (SPPTotal)",
+     main = "Simple Linear Regression")
+
+abline(model_simple,
+       col = "red",
+       lwd = 2)
+
+points(x, yhat,
+       pch = 17,
+       col = "darkgreen",
+       cex = 1.2)
+
+segments(x0 = x,
+         y0 = y,
+         x1 = x,
+         y1 = yhat,
+         col = "gray50",
+         lty = 2)
+
+legend("topright",
+       legend = c("Observed", "Predicted", "Regression Line"),
+       pch = c(19, 17, NA),
+       lty = c(NA, NA, 1),
+       col = c("blue", "darkgreen", "red"),
+       lwd = c(NA, NA, 2),
+       bty = "n")
+
+dev.off()
+
+
+#### B. Multiple Linear Regression
+# 1. Read in both annual precipitation and temperature data and extract the data following the instructions from A4–5.
+temp_raster <- rast("annual_temperature.tif")
+precip_raster <- rast("annual_precipitation.tif")
+extracted_temp <- extract(temp_raster, species_vect)
+extracted_precip <- extract(precip_raster, species_vect)
+
+# 2. Combine the extracted data with the species and elevation data into a single dataframe.
+df_multiple <- data.frame(
+  SPPTotal = as.numeric(species_cleaned$SPPTotal),
+  elevation = extracted_elev$Band_1,
+  temperature = extracted_temp$annual_temperature,
+  precipitation = extracted_precip$annual_precipitation
+)
+
+good_multiple <- complete.cases(df_multiple)
+df_multiple <- df_multiple[good_multiple, ]
+
+# 3. Perform multiple linear regression using the “lm” function.
+model_multiple <- lm(
+  SPPTotal ~ elevation + temperature + precipitation,
+  data = df_multiple
+)
+
+summary(model_multiple)
+
+# 4. Which relationship is statistically significant?
+# Based on the results of the multiple regression table, temperature and precipitation are statistically significant independent variables with species richnes. Temperature and precipitation containe p-values below a = 0.05, because they presented the values p = 0.03107 and p = 0.02770, respectively. In other words, they are statistically sifnificant at 95% confidence level. 
