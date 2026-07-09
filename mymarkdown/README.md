@@ -11,3 +11,5 @@ Phoebe Arriola - 12217875
 [Activity 10: GIS](https://phoebearriola.github.io/datasci/mymarkdown/Arriola_gis.html)
 
 [Activity 11: Linear Regression](https:///phoebearriola.github.io/datasci/mymarkdown/Arriola_linear_reg.html)
+
+[Activity 12: Logistic Regression](https://phoebearriola.github.io/datasci/mymarkdown/Arriola_Logistic_reg.html)
