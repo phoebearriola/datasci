@@ -1,0 +1,177 @@
+---
+title: "Arriola_logistic_reg"
+author: "Arriola, Phoebe M."
+date: "2026-07-09"
+output: html_document
+---
+
+```{r setup-and-data}
+# 1. Setting up libraries and directory
+library(terra)
+getwd()
+setwd("/Users/phoebearriola/Desktop/uni")
+list.files()
+
+# 2. Read in the species data and remove unnecessary rows with NAs.
+mouse_deer_data <- read.csv("ph_mouse_deer.csv")
+good_rows <- complete.cases(mouse_deer_data)
+deer_cleaned <- mouse_deer_data[good_rows, ]
+
+# 3. Generate a map showing the species' observation localities using the longitude and latitude coordinates. Check Activity 10 and use the provided codes as your guide for creating the map. Export the map as a PDF file.
+coords <- deer_cleaned[, c("Longitude", "Latitude")]
+species_vect <- vect(as.matrix(coords), crs = "+proj=longlat +datum=WGS84")
+
+pdf("Arriola_Species_Localities_Map.pdf", width = 7, height = 6)
+par(mar = c(5, 4, 5, 2)) 
+plot(species_vect, 
+     col = ifelse(deer_cleaned$Detected == 1, "darkred", "darkblue"), 
+     pch = 19, cex = 1.2,
+     main = "Philippine Mouse Deer Observation Localities (Supsup et al. 2021)")
+legend("topright", legend = c("Detected (1)", "Not Detected (0)"), 
+       col = c("darkred", "darkblue"), pch = 19, bty = "n")
+dev.off()
+
+par(mar = c(5, 4, 5, 2)) 
+plot(species_vect, 
+     col = ifelse(deer_cleaned$Detected == 1, "darkred", "darkblue"), 
+     pch = 19, cex = 1.2,
+     main = "Philippine Mouse Deer Observation Localities (Supsup et al. 2021)")
+legend("topright", legend = c("Detected (1)", "Not Detected (0)"), 
+       col = c("darkred", "darkblue"), pch = 19, bty = "n")
+
+# 4. Using the “glm()” function, perform multiple logistic regression. Ensure that the habitat types (i.e., HabitatCode; CVT - Cultivation; ESG - Early secondary growth forest; ASG - Advanced secondary growth forest; OGF - Old-growth forest) are treated as categorical variables by converting them to factors.
+
+deer_cleaned$HabitatCode <- factor(deer_cleaned$HabitatCode)
+
+model_logistic <- glm(Detected ~ AverageDistance + Effort + HabitatCode, 
+                      family = binomial(link = "logit"), 
+                      data = deer_cleaned)
+
+# 5. After fitting the model, create a logistic regression curve plot for each independent variable used. Export the plots as PDF files.
+
+refHab <- names(sort(table(deer_cleaned$HabitatCode),
+                     decreasing = TRUE))[1]
+
+#### Average Distance Plot
+
+dist_data <- data.frame(
+  AverageDistance = seq(min(deer_cleaned$AverageDistance),
+                        max(deer_cleaned$AverageDistance),
+                        length.out = 100),
+  Effort = mean(deer_cleaned$Effort),
+  HabitatCode = factor(refHab,
+                       levels = levels(deer_cleaned$HabitatCode))
+)
+
+# Predicted probabilities
+dist_data$Probability <- predict(model_logistic,
+                                 newdata = dist_data,
+                                 type = "response")
+
+
+pdf("Arriola_Logistic_Curve_AverageDistance.pdf",
+    width = 7,
+    height = 5)
+
+plot(deer_cleaned$AverageDistance,
+     deer_cleaned$Detected,
+     pch = 19,
+     xlab = "Average Distance",
+     ylab = "Probability of Detection",
+     ylim = c(0,1),
+     main = "Logistic Regression Curve:\nAverage Distance Effect")
+
+lines(dist_data$AverageDistance,
+      dist_data$Probability,
+      col = "blue",
+      lwd = 2)
+
+abline(h = 0.5,
+       lty = 2,
+       col = "darkgreen")
+
+dev.off()
+
+# Display in HTML
+plot(deer_cleaned$AverageDistance,
+     deer_cleaned$Detected,
+     pch = 19,
+     xlab = "Average Distance",
+     ylab = "Probability of Detection",
+     ylim = c(0,1),
+     main = "Logistic Regression Curve:\nAverage Distance Effect")
+
+lines(dist_data$AverageDistance,
+      dist_data$Probability,
+      col = "blue",
+      lwd = 2)
+
+abline(h = 0.5,
+       lty = 2,
+       col = "darkgreen")
+
+
+##### Sampling Effort Plot
+
+effort_data <- data.frame(
+  AverageDistance = mean(deer_cleaned$AverageDistance),
+  Effort = seq(min(deer_cleaned$Effort),
+               max(deer_cleaned$Effort),
+               length.out = 100),
+  HabitatCode = factor(refHab,
+                       levels = levels(deer_cleaned$HabitatCode))
+)
+
+# Predicted probabilities
+effort_data$Probability <- predict(model_logistic,
+                                   newdata = effort_data,
+                                   type = "response")
+
+
+pdf("Arriola_Logistic_Curve_Effort.pdf",
+    width = 7,
+    height = 5)
+
+plot(deer_cleaned$Effort,
+     deer_cleaned$Detected,
+     pch = 19,
+     xlab = "Sampling Effort",
+     ylab = "Probability of Detection",
+     ylim = c(0,1),
+     main = "Logistic Regression Curve:\nSampling Effort Effect")
+
+lines(effort_data$Effort,
+      effort_data$Probability,
+      col = "blue",
+      lwd = 2)
+
+abline(h = 0.5,
+       lty = 2,
+       col = "darkgreen")
+
+dev.off()
+
+# Display in HTML
+plot(deer_cleaned$Effort,
+     deer_cleaned$Detected,
+     pch = 19,
+     xlab = "Sampling Effort",
+     ylab = "Probability of Detection",
+     ylim = c(0,1),
+     main = "Logistic Regression Curve:\nSampling Effort Effect")
+
+lines(effort_data$Effort,
+      effort_data$Probability,
+      col = "blue",
+      lwd = 2)
+
+abline(h = 0.5,
+       lty = 2,
+       col = "darkgreen")
+
+# 6. Now, output the model summary and examine the results.
+summary(model_logistic)
+
+cat("\n--- Calculated Variable Odds Ratios ---\n")
+print(exp(coef(model_logistic)))
+
