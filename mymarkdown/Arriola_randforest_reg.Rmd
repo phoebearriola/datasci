@@ -1,0 +1,108 @@
+---
+title: "Arriola_randforest_reg"
+author: "Arriola, Phoebe M."
+date: "2026-07-13"
+output: html_document
+---
+
+```{r setup-and-data}
+# 1. Setting up packages 
+library(ranger)
+library(ggplot2)
+library(dplyr)
+getwd()
+setwd("/Users/phoebearriola/Desktop/uni/LBBBI27")
+list.files()
+
+# 2. Read in the acoustic data and remove unnecessary columns (i.e., column 1). Remember that your response variable is the species column.
+df <- read.csv("call_data_12October2025.csv")
+df_clean <- df[, -1]
+df_clean$Species <- as.factor(df_clean$Species)
+str(df_clean)
+
+# 3. Design your Cartesian grid and perform a random forest that iterates on each hyperparameter combination.
+grid <- expand.grid(
+  num.trees = c(100, 300, 500),
+  mtry = c(2, 4, 6),
+  min.node.size = c(1, 5, 10)
+)
+grid$OOB_Error <- NA
+
+print(head(grid))
+
+set.seed(123)
+for(i in 1:nrow(grid)) {
+rf_fit <- ranger(
+    formula         = Species ~ ., 
+    data            = df_clean, 
+    num.trees       = grid$num.trees[i],
+    mtry            = grid$mtry[i],
+    min.node.size   = grid$min.node.size[i],
+    probability     = FALSE # Standard classification to get clear OOB error
+  )
+grid$OOB_Error[i] <- rf_fit$prediction.error
+}
+print(grid)
+
+# 4. Pick the best hyperparameter combination that minimizes the out-of-bag error.
+best_row <- grid[which.min(grid$OOB_Error), ]
+print("Best Hyperparameter Combination Found:")
+print(best_row) 
+
+# 5. Using the optimal hyperparameter, provide a plot of variable importance and the predicted class probabilities.
+
+## Variable Importance Plot
+optimal_rf <- ranger(
+  formula         = Species ~ ., 
+  data            = df_clean, 
+  num.trees       = best_row$num.trees,
+  mtry            = best_row$mtry,
+  min.node.size   = best_row$min.node.size,
+  importance      = "permutation"
+)
+
+imp_scores <- importance(optimal_rf)
+imp_df <- data.frame(
+  Variable = names(imp_scores),
+  Importance = as.numeric(imp_scores)
+) %>% arrange(desc(Importance))
+
+ggplot(imp_df, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Variable Importance Plot (Optimal Model)",
+       x = "Predictors",
+       y = "Permutation Importance Score") +
+  theme_minimal()
+
+## Predicted Class Probabilities Plot
+prob_rf <- ranger(
+  formula         = Species ~ ., 
+  data            = df_clean, 
+  num.trees       = best_row$num.trees,
+  mtry            = best_row$mtry,
+  min.node.size   = best_row$min.node.size,
+  probability     = TRUE
+)
+
+predicted_probs <- predict(prob_rf, data = df_clean)$predictions
+head(predicted_probs)
+
+prob_df <- data.frame(predicted_probs)
+prob_df$Actual_Species <- df_clean$Species
+
+prob_long <- prob_df %>%
+  tidyr::pivot_longer(
+    cols = -Actual_Species, 
+    names_to = "Predicted_Species", 
+    values_to = "Probability"
+  )
+
+ggplot(prob_long, aes(x = Predicted_Species, y = Probability, fill = Predicted_Species)) +
+  geom_boxplot() +
+  facet_wrap(~ Actual_Species) +
+  labs(title = "Distribution of Predicted Class Probabilities by Actual Species",
+       x = "Predicted Species Class",
+       y = "Predicted Probability Allocation") +
+  theme_light() +
+  theme(legend.position = "none")
