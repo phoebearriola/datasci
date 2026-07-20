@@ -1,0 +1,579 @@
+---
+title: "Gradient Boosting"
+author: "Arriola, Phoebe and Santiago, Thompson"
+date: "2026-07-16"
+output: html_document
+---
+
+```{r setup-and-data}
+
+########################################################
+## Defining gradient boosting
+########################################################
+
+## Gradient Boosting is a supervised ensemble machine learning
+## algorithm that combines many weak learners (usually shallow
+## decision trees) to improve prediction accuracy.
+
+## Instead of building trees independently like Random Forest,
+## Gradient Boosting builds trees sequentially.
+
+## Every new tree attempts to correct the errors made
+## by the previous trees.
+
+## Each tree learns from the residual errors,
+## making the overall prediction progressively better.
+
+
+########################################################
+## Difference between Random Forest and Gradient Boosting
+########################################################
+
+## RANDOM FOREST
+
+## Trees are built independently.
+
+## Uses bootstrap sampling.
+
+## Randomly selects predictors at every split.
+
+## Final prediction:
+## Classification -> Majority Vote
+## Regression -> Average Prediction
+
+## Trees do not communicate with one another.
+
+########################################################
+
+## GRADIENT BOOSTING
+
+## Trees are built sequentially.
+
+## Every tree learns from previous errors.
+
+## Uses residuals (prediction errors).
+
+## Final prediction is the sum of all tree predictions.
+
+## Usually produces higher predictive accuracy but
+## requires longer computation time.
+
+
+########################################################
+## Types of Gradient Boosting
+########################################################
+## A. Regression Gradient Boosting
+########################################################
+
+## Used when the response variable is continuous.
+
+## Example:
+## House Price
+## Temperature
+## Species Richness
+## Biomass
+
+## Loss Function
+
+## Mean Squared Error (MSE)
+
+##
+##             n
+## MSE = (1/n) Σ (yi - ŷi)^2
+##            i=1
+##
+
+## where
+
+## yi = observed value
+
+## ŷi = predicted value
+
+## Smaller MSE indicates better prediction.
+
+
+########################################################
+## B. Classification Gradient Boosting
+########################################################
+
+## Used when the response variable is categorical.
+
+## Example
+
+## Disease
+## Species
+## Presence/Absence
+
+## Common Loss Function
+
+## Log Loss (Cross Entropy)
+
+##
+## L = -Σ[y log(p)+(1-y)log(1-p)]
+##
+
+## Smaller Log Loss indicates better classification.
+
+
+########################################################
+## C. Ranking Gradient Boosting
+########################################################
+
+## Used to rank observations.
+
+## Applications
+
+## Search engines
+
+## Product recommendations
+
+## Advertisement ranking
+
+
+########################################################
+## D. Survival Gradient Boosting
+########################################################
+
+## Used for survival analysis.
+
+## Predicts time until an event occurs.
+
+## Example
+
+## Patient survival
+
+## Equipment failure
+
+## Ecological persistence
+
+########################################################
+## Regression Gradient Boosting Algorithm
+########################################################
+
+## Step a.
+## Prepare the dataset
+
+## Step b.
+## Specify the predictor(s) and response variable
+
+## Step c.
+## Initialize the model using the mean response
+
+## Step d.
+## Compute the residuals
+
+## Step e.
+## Fit a regression stump by evaluating every
+## possible split and selecting the split that
+## minimizes the Residual Sum of Squares (RSS)
+
+## Step f.
+## Predict the residuals using the regression stump
+
+## Step g.
+## Update the predictions using the learning rate
+
+## Step h.
+## Repeat Steps d–g until the desired number
+## of boosting iterations (trees) has been built
+
+## Step i.
+## Compute the Mean Squared Error (MSE)
+
+## Step j.
+## Evaluate the model performance
+
+
+
+########################################################
+## Mathematical Equations
+########################################################
+
+## Initial Prediction
+
+##
+## F₀(x) = mean(y)
+##
+
+## Residual
+
+##
+## rᵢ = yᵢ − Fₘ₋₁(x)
+##
+
+## Residual Sum of Squares
+
+##
+## RSS = Σ(rᵢ − r̄)²
+##
+
+## Update Equation
+
+##
+## Fₘ(x) = Fₘ₋₁(x) + ηhₘ(x)
+##
+
+## Mean Squared Error
+
+##
+##               n
+## MSE = (1/n) Σ (yᵢ − Fₘ(x))²
+##              i=1
+##
+
+## where
+
+## yᵢ = observed value
+
+## Fₘ(x) = prediction after m boosting iterations
+
+## hₘ(x) = prediction from the mth regression stump
+
+## η = learning rate
+
+## r̄ = mean residual within the node
+
+## m = boosting iteration
+
+## Smaller RSS indicates a better regression stump.
+
+## Smaller MSE indicates better model performance.
+
+
+
+########################################################
+## Manual Regression Gradient Boosting
+########################################################
+
+########################################################
+## Step a.
+## Prepare the dataset
+########################################################
+
+data(mtcars)
+
+########################################################
+## Step b.
+## Specify the predictor(s) and response variable
+########################################################
+
+## Predictor
+
+X <- mtcars$wt
+
+## Response
+
+Y <- mtcars$mpg
+
+## Response variable name
+
+response <- "mpg"
+
+########################################################
+## Number of observations
+########################################################
+
+n <- length(Y)
+
+########################################################
+## Learning rate
+########################################################
+
+learning_rate <- 0.10
+
+########################################################
+## Number of boosting iterations
+########################################################
+
+n_trees <- 5
+
+########################################################
+## Step c.
+## Initialize the model using the mean response
+########################################################
+
+F0 <- mean(Y)
+
+cat("Initial Prediction =", F0, "\n")
+
+########################################################
+## Initial prediction for every observation
+########################################################
+
+prediction <- rep(F0, n)
+
+########################################################
+## Store Mean Squared Error
+########################################################
+
+mse <- numeric(n_trees)
+
+########################################################
+## Store regression stumps
+########################################################
+
+forest <- vector("list", n_trees)
+
+########################################################
+## Step h.
+## Repeat boosting iterations
+########################################################
+
+for(tree in 1:n_trees){
+
+  cat("\n=====================================\n")
+  cat("Boosting Iteration:", tree, "\n")
+  cat("=====================================\n")
+
+########################################################
+## Step d.
+## Compute the residuals
+########################################################
+
+  residual <- Y - prediction
+
+  cat("\nResiduals\n")
+  print(round(residual,3))
+
+########################################################
+## Step e.
+## Fit a regression stump
+########################################################
+
+########################################################
+## Candidate split values
+########################################################
+
+  values <- sort(unique(X))
+
+########################################################
+## Candidate split points
+########################################################
+
+  splits <- (values[-1] +
+             values[-length(values)]) / 2
+
+########################################################
+## Initialize best regression stump
+########################################################
+
+  best_split <- NA
+
+  best_rss <- Inf
+
+  best_left_mean <- NA
+
+  best_right_mean <- NA
+
+########################################################
+## Evaluate every possible split using RSS
+########################################################
+
+  for(split in splits){
+
+    left <- residual[X <= split]
+
+    right <- residual[X > split]
+
+    if(length(left)==0 || length(right)==0)
+      next
+
+########################################################
+## Compute node means
+########################################################
+
+    left_mean <- mean(left)
+
+    right_mean <- mean(right)
+
+########################################################
+## Compute Residual Sum of Squares (RSS)
+########################################################
+
+    rss_left <- sum((left-left_mean)^2)
+
+    rss_right <- sum((right-right_mean)^2)
+
+    rss_total <- rss_left + rss_right
+
+########################################################
+## Select the split with the smallest RSS
+########################################################
+
+    if(rss_total < best_rss){
+
+      best_rss <- rss_total
+
+      best_split <- split
+
+      best_left_mean <- left_mean
+
+      best_right_mean <- right_mean
+
+    }
+
+  }
+
+########################################################
+## Display best regression stump
+########################################################
+
+  cat("\nBest Split =", best_split, "\n")
+
+  cat("RSS =", best_rss, "\n")
+
+########################################################
+## Step f.
+## Predict residuals using the regression stump
+########################################################
+
+  weak_prediction <- ifelse(
+
+    X <= best_split,
+
+    best_left_mean,
+
+    best_right_mean
+
+  )
+
+########################################################
+## Display stump predictions
+########################################################
+
+  cat("\nPredicted Residuals\n")
+
+  print(round(weak_prediction,3))
+
+########################################################
+## Step g.
+## Update predictions
+########################################################
+
+## Fm(x)=Fm-1(x)+ηhm(x)
+
+  prediction <- prediction +
+                learning_rate *
+                weak_prediction
+
+########################################################
+## Display updated predictions
+########################################################
+
+  cat("\nUpdated Predictions\n")
+
+  print(round(prediction,3))
+
+########################################################
+## Save regression stump
+########################################################
+
+  forest[[tree]] <- list(
+
+    split = best_split,
+
+    left_prediction = best_left_mean,
+
+    right_prediction = best_right_mean
+
+  )
+
+########################################################
+## Step i.
+## Compute Mean Squared Error
+########################################################
+
+  mse[tree] <- mean((Y-prediction)^2)
+
+  cat("\nMean Squared Error =",
+
+      round(mse[tree],4),
+
+      "\n")
+
+}
+
+########################################################
+## Final Predictions
+########################################################
+
+cat("\n=====================================\n")
+
+cat("Final Predictions\n")
+
+cat("=====================================\n")
+
+results <- data.frame(
+
+Observed = Y,
+
+Predicted = round(prediction,3)
+
+)
+
+print(results)
+
+########################################################
+## Final Mean Squared Error
+########################################################
+
+cat("\nMSE After Each Boosting Iteration\n")
+
+print(round(mse,4))
+
+cat("\nFinal MSE =",
+
+round(tail(mse,1),4),
+
+"\n")
+
+########################################################
+## Step j.
+## Evaluate Model Performance
+########################################################
+
+########################################################
+## Plot Learning Curve
+########################################################
+
+plot(
+
+1:n_trees,
+
+mse,
+
+type = "b",
+
+pch = 19,
+
+lwd = 2,
+
+xlab = "Boosting Iteration",
+
+ylab = "Mean Squared Error",
+
+main = "Gradient Boosting Learning Curve"
+
+)
+
+########################################################
+## Plot Observed vs Predicted
+########################################################
+
+plot(
+
+Y,
+
+prediction,
+
+pch = 19,
+
+xlab = "Observed MPG",
+
+ylab = "Predicted MPG",
+
+main = "Observed vs Predicted"
+
+)
+
+abline(0,1,lwd=2)
