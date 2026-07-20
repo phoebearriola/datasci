@@ -15,3 +15,5 @@ Phoebe Arriola - 12217875
 [Activity 12: Logistic Regression](https://phoebearriola.github.io/datasci/mymarkdown/Arriola_Logistic_reg.html)
 
 [Activity 13: Random Forest](https://phoebearriola.github.io/datasci/mymarkdown/Arriola_randforest_reg.html)
+
+[Activity 14: Gradient Boosting](https://phoebearriola.github.io/datasci/mymarkdown/Arriola-Santiago_gradient_boost.html)
